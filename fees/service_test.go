@@ -488,7 +488,7 @@ func TestBillService_ListAllBills(t *testing.T) {
 	t.Run("validation error", func(t *testing.T) {
 		ctx := context.Background()
 		req := &ListAllBillsRequest{
-			Limit: 1001, // This exceeds the max limit and will cause validation to fail
+			Limit: 1001,
 		}
 
 		response, err := service.ListAllBills(ctx, req)

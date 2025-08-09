@@ -292,7 +292,7 @@ func TestBill_Validate(t *testing.T) {
 				Currency:   USD,
 				Status:     "INVALID",
 			},
-			wantErr: nil, // Will return a generic error, not a specific one
+			wantErr: nil,
 		},
 	}
 
