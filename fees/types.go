@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	ErrBillNotFound         = errors.New("bill not found")
-	ErrBillAlreadyClosed    = errors.New("bill is already closed")
-	ErrInvalidCurrency      = errors.New("invalid currency")
-	ErrInvalidAmount        = errors.New("amount must be positive")
-	ErrEmptyDescription     = errors.New("description cannot be empty")
-	ErrEmptyCustomerID      = errors.New("customer ID cannot be empty")
-	ErrInvalidBillID        = errors.New("invalid bill ID format")
+	ErrBillNotFound      = errors.New("bill not found")
+	ErrBillAlreadyClosed = errors.New("bill is already closed")
+	ErrInvalidCurrency   = errors.New("invalid currency")
+	ErrInvalidAmount     = errors.New("amount must be positive")
+	ErrEmptyDescription  = errors.New("description cannot be empty")
+	ErrEmptyCustomerID   = errors.New("customer ID cannot be empty")
+	ErrInvalidBillID     = errors.New("invalid bill ID format")
 )
 
 type Currency string

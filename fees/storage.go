@@ -1,20 +1,15 @@
+//go:build !test
+
 package fees
 
 import (
-	"sync"
 	"encore.dev/storage/sqldb"
 )
 
-var (
-	db   *sqldb.Database
-	dbOnce sync.Once
-)
+var db = sqldb.NewDatabase("feesdb", sqldb.DatabaseConfig{
+	Migrations: "./migrations",
+})
 
 func getDB() *sqldb.Database {
-	dbOnce.Do(func() {
-		db = sqldb.NewDatabase("feesdb", sqldb.DatabaseConfig{
-			Migrations: "./migrations",
-		})
-	})
 	return db
 }
