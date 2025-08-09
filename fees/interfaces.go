@@ -16,6 +16,7 @@ type RepositoryInterface interface {
 	GetLineItemsByBillID(ctx context.Context, billID string) ([]LineItem, error)
 	UpdateBillStatus(ctx context.Context, billID string, status BillStatus, totalAmount int64) error
 	ListBillsByCustomer(ctx context.Context, customerID string, status *BillStatus, limit, offset int) ([]*Bill, error)
+	ListAllBills(ctx context.Context, status *BillStatus, limit, offset int) ([]*Bill, error)
 }
 
 type TemporalClientInterface interface {

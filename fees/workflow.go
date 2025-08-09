@@ -45,10 +45,10 @@ func BillWorkflow(ctx workflow.Context, initialBill Bill) error {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 30 * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts:        3,
-			BackoffCoefficient:     2.0,
-			InitialInterval:        time.Second,
-			MaximumInterval:        30 * time.Second,
+			MaximumAttempts:    3,
+			BackoffCoefficient: 2.0,
+			InitialInterval:    time.Second,
+			MaximumInterval:    30 * time.Second,
 		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
@@ -72,9 +72,9 @@ func BillWorkflow(ctx workflow.Context, initialBill Bill) error {
 		return fmt.Errorf("failed to save final bill: %w", err)
 	}
 
-	logger.Info("Bill workflow completed successfully", 
-		"bill_id", initialBill.ID, 
-		"total_amount", total, 
+	logger.Info("Bill workflow completed successfully",
+		"bill_id", initialBill.ID,
+		"total_amount", total,
 		"line_items_count", len(lineItems))
 
 	return nil

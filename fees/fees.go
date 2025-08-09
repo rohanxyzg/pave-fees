@@ -125,3 +125,40 @@ func ListBills(ctx context.Context, customerID string, params ListBillsParams) (
 	}
 	return service.ListBills(ctx, req)
 }
+
+type ListAllBillsParams struct {
+	Status string `query:"status"`
+	Limit  int    `query:"limit"`
+	Offset int    `query:"offset"`
+}
+
+//encore:api public method=GET path=/bills
+func ListAllBills(ctx context.Context, params ListAllBillsParams) (*ListBillsResponse, error) {
+	req := &ListAllBillsRequest{
+		Status: nil,
+		Limit:  50,
+		Offset: 0,
+	}
+	
+	// Convert string status to BillStatus if provided and not empty
+	if params.Status != "" {
+		status := BillStatus(params.Status)
+		req.Status = &status
+	}
+
+	// Use provided limit if greater than 0, otherwise default to 50
+	if params.Limit > 0 {
+		req.Limit = params.Limit
+	}
+
+	// Use provided offset if greater than 0, otherwise default to 0
+	if params.Offset > 0 {
+		req.Offset = params.Offset
+	}
+
+	service, err := getService()
+	if err != nil {
+		return nil, fmt.Errorf("service initialization failed: %w", err)
+	}
+	return service.ListAllBills(ctx, req)
+}

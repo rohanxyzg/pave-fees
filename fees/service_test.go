@@ -393,8 +393,13 @@ func TestBillService_ListBills(t *testing.T) {
 		}
 
 		expectedBills := []*Bill{
-			{ID: "bill-1", CustomerID: "customer-123", Status: BillStatusOpen},
-			{ID: "bill-2", CustomerID: "customer-123", Status: BillStatusClosed},
+			{ID: "bill-1", CustomerID: "customer-123", Status: BillStatusOpen, Currency: USD},
+			{ID: "bill-2", CustomerID: "customer-123", Status: BillStatusClosed, Currency: USD},
+		}
+
+		expectedSummaries := []*BillSummary{
+			{ID: "bill-1", CustomerID: "customer-123", Status: BillStatusOpen, Currency: USD},
+			{ID: "bill-2", CustomerID: "customer-123", Status: BillStatusClosed, Currency: USD},
 		}
 
 		mockRepo.EXPECT().
@@ -405,7 +410,7 @@ func TestBillService_ListBills(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, response)
-		assert.Equal(t, expectedBills, response.Bills)
+		assert.Equal(t, expectedSummaries, response.Bills)
 		assert.Equal(t, len(expectedBills), response.Total)
 	})
 
@@ -439,5 +444,76 @@ func TestBillService_ListBills(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, response)
 		assert.Contains(t, err.Error(), "failed to list bills")
+	})
+}
+
+func TestBillService_ListAllBills(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := NewMockRepositoryInterface(ctrl)
+	mockTemporal := NewMockTemporalClientInterface(ctrl)
+	service := NewBillService(mockRepo, mockTemporal)
+
+	t.Run("success", func(t *testing.T) {
+		ctx := context.Background()
+		req := &ListAllBillsRequest{
+			Status: nil,
+			Limit:  50,
+			Offset: 0,
+		}
+
+		expectedBills := []*Bill{
+			{ID: "bill-1", CustomerID: "customer-1", Currency: USD, Status: BillStatusOpen},
+			{ID: "bill-2", CustomerID: "customer-2", Currency: GEL, Status: BillStatusClosed},
+		}
+
+		expectedSummaries := []*BillSummary{
+			{ID: "bill-1", CustomerID: "customer-1", Currency: USD, Status: BillStatusOpen},
+			{ID: "bill-2", CustomerID: "customer-2", Currency: GEL, Status: BillStatusClosed},
+		}
+
+		mockRepo.EXPECT().
+			ListAllBills(ctx, req.Status, req.Limit, req.Offset).
+			Return(expectedBills, nil)
+
+		response, err := service.ListAllBills(ctx, req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, expectedSummaries, response.Bills)
+		assert.Equal(t, len(expectedBills), response.Total)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		ctx := context.Background()
+		req := &ListAllBillsRequest{
+			Limit: 1001, // This exceeds the max limit and will cause validation to fail
+		}
+
+		response, err := service.ListAllBills(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, response)
+		assert.Contains(t, err.Error(), "validation failed")
+	})
+
+	t.Run("repository error", func(t *testing.T) {
+		ctx := context.Background()
+		req := &ListAllBillsRequest{
+			Status: nil,
+			Limit:  50,
+			Offset: 0,
+		}
+
+		mockRepo.EXPECT().
+			ListAllBills(ctx, req.Status, req.Limit, req.Offset).
+			Return(nil, errors.New("database error"))
+
+		response, err := service.ListAllBills(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, response)
+		assert.Contains(t, err.Error(), "failed to list all bills")
 	})
 }

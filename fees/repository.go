@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"encore.dev/storage/sqldb"
@@ -126,23 +127,28 @@ func (r *Repository) UpdateBillStatus(ctx context.Context, billID string, status
 	return nil
 }
 
-func (r *Repository) ListBillsByCustomer(ctx context.Context, customerID string, status *BillStatus, limit, offset int) ([]*Bill, error) {
-	query := `
-		SELECT id, customer_id, currency, status, total_amount 
-		FROM bills 
-		WHERE customer_id = $1
-	`
-	args := []interface{}{customerID}
+func (r *Repository) listBills(ctx context.Context, customerID *string, status *BillStatus, limit, offset int, includeLineItems bool) ([]*Bill, error) {
+	query := `SELECT id, customer_id, currency, status, total_amount FROM bills`
+	var args []interface{}
+	var conditions []string
+	
+	if customerID != nil {
+		conditions = append(conditions, "customer_id = $1")
+		args = append(args, *customerID)
+	}
 	
 	if status != nil {
-		query += " AND status = $2"
+		placeholder := fmt.Sprintf("$%d", len(args)+1)
+		conditions = append(conditions, fmt.Sprintf("status = %s", placeholder))
 		args = append(args, *status)
-		query += " ORDER BY created_at DESC LIMIT $3 OFFSET $4"
-		args = append(args, limit, offset)
-	} else {
-		query += " ORDER BY created_at DESC LIMIT $2 OFFSET $3"
-		args = append(args, limit, offset)
 	}
+	
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, limit, offset)
 	
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -157,11 +163,15 @@ func (r *Repository) ListBillsByCustomer(ctx context.Context, customerID string,
 			return nil, fmt.Errorf("failed to scan bill: %w", err)
 		}
 		
-		lineItems, err := r.GetLineItemsByBillID(ctx, bill.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get line items for bill %s: %w", bill.ID, err)
+		if includeLineItems {
+			lineItems, err := r.GetLineItemsByBillID(ctx, bill.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get line items for bill %s: %w", bill.ID, err)
+			}
+			bill.LineItems = lineItems
+		} else {
+			bill.TotalAmount = 0
 		}
-		bill.LineItems = lineItems
 		
 		bills = append(bills, &bill)
 	}
@@ -171,4 +181,12 @@ func (r *Repository) ListBillsByCustomer(ctx context.Context, customerID string,
 	}
 	
 	return bills, nil
+}
+
+func (r *Repository) ListBillsByCustomer(ctx context.Context, customerID string, status *BillStatus, limit, offset int) ([]*Bill, error) {
+	return r.listBills(ctx, &customerID, status, limit, offset, false)
+}
+
+func (r *Repository) ListAllBills(ctx context.Context, status *BillStatus, limit, offset int) ([]*Bill, error) {
+	return r.listBills(ctx, nil, status, limit, offset, false)
 }

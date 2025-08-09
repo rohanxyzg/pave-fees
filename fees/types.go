@@ -72,6 +72,14 @@ type Bill struct {
 	CreatedAt   time.Time  `json:"createdAt"`
 }
 
+type BillSummary struct {
+	ID         string     `json:"id"`
+	CustomerID string     `json:"customerId"`
+	Currency   Currency   `json:"currency"`
+	Status     BillStatus `json:"status"`
+	CreatedAt  time.Time  `json:"createdAt"`
+}
+
 func (b *Bill) Validate() error {
 	if strings.TrimSpace(b.CustomerID) == "" {
 		return ErrEmptyCustomerID
@@ -159,6 +167,28 @@ func (r *ListBillsRequest) Validate() error {
 }
 
 type ListBillsResponse struct {
-	Bills []*Bill `json:"bills"`
-	Total int     `json:"total"`
+	Bills []*BillSummary `json:"bills"`
+	Total int           `json:"total"`
+}
+
+type ListAllBillsRequest struct {
+	Status *BillStatus `json:"status,omitempty"`
+	Limit  int         `json:"limit,omitempty"`
+	Offset int         `json:"offset,omitempty"`
+}
+
+func (r *ListAllBillsRequest) Validate() error {
+	if r.Status != nil && !r.Status.IsValid() {
+		return fmt.Errorf("invalid status filter: %s", *r.Status)
+	}
+	if r.Limit <= 0 {
+		r.Limit = 50
+	}
+	if r.Offset < 0 {
+		r.Offset = 0
+	}
+	if r.Limit > 1000 {
+		return errors.New("limit cannot exceed 1000")
+	}
+	return nil
 }

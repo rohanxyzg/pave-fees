@@ -126,7 +126,13 @@ func (s *BillService) GetBill(ctx context.Context, billID string) (*GetBillRespo
 		return nil, err
 	}
 
-	slog.Debug("bill retrieved successfully", "bill_id", billID, "status", bill.Status)
+	var calculatedTotal int64 = 0
+	for _, item := range bill.LineItems {
+		calculatedTotal += item.Amount
+	}
+	bill.TotalAmount = calculatedTotal
+
+	slog.Debug("bill retrieved successfully", "bill_id", billID, "status", bill.Status, "calculated_total", calculatedTotal)
 	return &GetBillResponse{Bill: bill}, nil
 }
 
@@ -142,6 +148,44 @@ func (s *BillService) ListBills(ctx context.Context, req *ListBillsRequest) (*Li
 		return nil, fmt.Errorf("failed to list bills: %w", err)
 	}
 
+	billSummaries := make([]*BillSummary, len(bills))
+	for i, bill := range bills {
+		billSummaries[i] = &BillSummary{
+			ID:         bill.ID,
+			CustomerID: bill.CustomerID,
+			Currency:   bill.Currency,
+			Status:     bill.Status,
+			CreatedAt:  bill.CreatedAt,
+		}
+	}
+
 	slog.Debug("bills listed successfully", "customer_id", req.CustomerID, "count", len(bills))
-	return &ListBillsResponse{Bills: bills, Total: len(bills)}, nil
+	return &ListBillsResponse{Bills: billSummaries, Total: len(bills)}, nil
+}
+
+func (s *BillService) ListAllBills(ctx context.Context, req *ListAllBillsRequest) (*ListBillsResponse, error) {
+	if err := req.Validate(); err != nil {
+		slog.Error("invalid list all bills request", "error", err)
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	bills, err := s.repo.ListAllBills(ctx, req.Status, req.Limit, req.Offset)
+	if err != nil {
+		slog.Error("failed to list all bills", "error", err)
+		return nil, fmt.Errorf("failed to list all bills: %w", err)
+	}
+
+	billSummaries := make([]*BillSummary, len(bills))
+	for i, bill := range bills {
+		billSummaries[i] = &BillSummary{
+			ID:         bill.ID,
+			CustomerID: bill.CustomerID,
+			Currency:   bill.Currency,
+			Status:     bill.Status,
+			CreatedAt:  bill.CreatedAt,
+		}
+	}
+
+	slog.Debug("all bills listed successfully", "count", len(bills))
+	return &ListBillsResponse{Bills: billSummaries, Total: len(bills)}, nil
 }

@@ -108,6 +108,21 @@ func (mr *MockRepositoryInterfaceMockRecorder) GetLineItemsByBillID(ctx, billID 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLineItemsByBillID", reflect.TypeOf((*MockRepositoryInterface)(nil).GetLineItemsByBillID), ctx, billID)
 }
 
+// ListAllBills mocks base method.
+func (m *MockRepositoryInterface) ListAllBills(ctx context.Context, status *BillStatus, limit, offset int) ([]*Bill, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllBills", ctx, status, limit, offset)
+	ret0, _ := ret[0].([]*Bill)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllBills indicates an expected call of ListAllBills.
+func (mr *MockRepositoryInterfaceMockRecorder) ListAllBills(ctx, status, limit, offset interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllBills", reflect.TypeOf((*MockRepositoryInterface)(nil).ListAllBills), ctx, status, limit, offset)
+}
+
 // ListBillsByCustomer mocks base method.
 func (m *MockRepositoryInterface) ListBillsByCustomer(ctx context.Context, customerID string, status *BillStatus, limit, offset int) ([]*Bill, error) {
 	m.ctrl.T.Helper()

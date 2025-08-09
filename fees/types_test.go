@@ -1,6 +1,7 @@
 package fees
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -466,6 +467,78 @@ func TestListBillsRequest_Validate(t *testing.T) {
 				assert.Error(t, err)
 				if tt.name == "invalid status filter" {
 					assert.Contains(t, err.Error(), "invalid status filter")
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedLimit, tt.req.Limit)
+				assert.Equal(t, tt.expectedOffset, tt.req.Offset)
+			}
+		})
+	}
+}
+
+func TestListAllBillsRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name           string
+		req            ListAllBillsRequest
+		wantErr        error
+		expectedLimit  int
+		expectedOffset int
+	}{
+		{
+			name: "valid request with defaults",
+			req: ListAllBillsRequest{
+				Limit:  0,
+				Offset: 0,
+			},
+			expectedLimit:  50,
+			expectedOffset: 0,
+		},
+		{
+			name: "valid request with status",
+			req: ListAllBillsRequest{
+				Status: &[]BillStatus{BillStatusOpen}[0],
+				Limit:  25,
+				Offset: 10,
+			},
+			expectedLimit:  25,
+			expectedOffset: 10,
+		},
+		{
+			name: "invalid status filter",
+			req: ListAllBillsRequest{
+				Status: &[]BillStatus{"INVALID"}[0],
+				Limit:  50,
+			},
+			wantErr: errors.New("invalid status filter"),
+		},
+		{
+			name: "limit too high",
+			req: ListAllBillsRequest{
+				Limit: 1001,
+			},
+			wantErr: errors.New("limit cannot exceed 1000"),
+		},
+		{
+			name: "negative offset gets corrected",
+			req: ListAllBillsRequest{
+				Limit:  50,
+				Offset: -5,
+			},
+			expectedLimit:  50,
+			expectedOffset: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				if tt.name == "invalid status filter" {
+					assert.Contains(t, err.Error(), "invalid status filter")
+				} else if tt.name == "limit too high" {
+					assert.Contains(t, err.Error(), "limit cannot exceed 1000")
 				}
 			} else {
 				assert.NoError(t, err)
